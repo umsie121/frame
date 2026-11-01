@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Family Frame</title>
+  <style>
+    /* Boot splash, shown until the app mounts. Never a blank white page. */
+    html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+    #boot { position: absolute; left: 0; top: 0; right: 0; bottom: 0; display: -webkit-flex; display: flex;
+      -webkit-align-items: center; align-items: center; -webkit-justify-content: center; justify-content: center;
+      color: #8e8e93; font: 300 22px Roboto, -apple-system, "Helvetica Neue", sans-serif; letter-spacing: .02em; }
+  </style>
+</head>
+<body>
+  <div id="app"><div id="boot">Family Frame</div></div>
+  <script type="module" src="/src/main.tsx"></script>
+</body>
+</html>

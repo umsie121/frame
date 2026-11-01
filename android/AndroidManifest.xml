@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Family Frame: the on-frame hub (HTTP server + photo library) and a fullscreen WebView showing
+  the web UI it serves. Runs on the Frameo K1003 (Android 6, API 23) with no other computer needed.
+  HOME launcher (owner-approved 2026-10-23). Frameo is disabled, not removed:
+  `adb shell su -c 'pm enable net.frameo.frame'` brings it back.
+  The boot receiver ships DISABLED; enable it later with:
+    adb shell pm enable com.familyframe.shell/.BootReceiver
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.familyframe.shell"
+    android:versionCode="25"
+    android:versionName="1.5.1">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <!-- The library lives in /sdcard/FamilyFrame so uninstalling the app never deletes photos.
+         targetSdk 22 => granted at install (no runtime prompt on this kiosk). -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+    <application
+        android:name=".FrameApp"
+        android:label="Family Frame"
+        android:allowBackup="false"
+        android:hardwareAccelerated="true"
+        android:largeHeap="true"
+        android:usesCleartextTraffic="true">
+
+        <activity
+            android:name=".MainActivity"
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen"
+            android:screenOrientation="sensorLandscape"
+            android:configChanges="orientation|screenSize|keyboardHidden|keyboard|navigation"
+            android:launchMode="singleTask"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.HOME" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <!-- Night mode: force-lock-only device admin (turn screen off) + exact wake alarm.
+             Activate:   adb shell dpm set-active-admin com.familyframe.shell/.AdminReceiver
+             Deactivate: POST /api/admin/device-admin/off (loopback) — required before uninstalling. -->
+        <receiver android:name=".AdminReceiver" android:permission="android.permission.BIND_DEVICE_ADMIN" android:exported="true">
+            <meta-data android:name="android.app.device_admin" android:resource="@xml/device_admin" />
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+            </intent-filter>
+        </receiver>
+        <receiver android:name=".Night" android:exported="false" />
+
+        <receiver android:name=".BootReceiver" android:enabled="false" android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
+    </application>
+</manifest>

@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<title>Send to Frame</title>
+<style>
+  :root { --bg:#f5f5f7; --card:#fff; --text:#1d1d1f; --sub:#6e6e73; --line:#d2d2d7; --blue:#0071e3; --green:#28a745; --red:#d70015; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#000; --card:#1c1c1e; --text:#f5f5f7; --sub:#98989d; --line:#38383a; --blue:#0a84ff; --green:#30d158; --red:#ff453a; } }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin:0; background:var(--bg); color:var(--text); font: 17px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", sans-serif; -webkit-font-smoothing: antialiased; }
+  main { max-width: 440px; margin: 0 auto; padding: calc(env(safe-area-inset-top) + 56px) 24px calc(env(safe-area-inset-bottom) + 32px); min-height: 100vh; display:flex; flex-direction:column; }
+  .mark { width:56px; height:56px; border-radius:14px; background:var(--text); color:var(--bg); display:flex; align-items:center; justify-content:center; margin-bottom:28px; }
+  h1 { font: 600 34px/1.1 -apple-system, "SF Pro Display", sans-serif; letter-spacing:-0.02em; margin:0 0 10px; }
+  p.lede { color:var(--sub); margin:0 0 36px; font-size:19px; }
+  label.pick { display:block; background:var(--blue); color:#fff; text-align:center; font-weight:600; font-size:17px; padding:16px; border-radius:14px; cursor:pointer; }
+  label.pick:active { opacity:.8; }
+  input[type=file] { display:none; }
+  .name { margin-top:14px; width:100%; font:inherit; padding:14px 16px; border-radius:12px; border:1px solid var(--line); background:var(--card); color:var(--text); }
+  .name::placeholder { color:var(--sub); }
+  ul { list-style:none; padding:0; margin:28px 0 0; background:var(--card); border-radius:14px; overflow:hidden; }
+  ul:empty { display:none; }
+  li { display:flex; align-items:center; gap:14px; padding:12px 16px; border-bottom:1px solid var(--line); }
+  li:last-child { border-bottom:0; }
+  li img { width:44px; height:44px; object-fit:cover; border-radius:8px; background:var(--line); flex:none; }
+  li .t { flex:1; min-width:0; }
+  li .n { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:15px; }
+  li .s { font-size:13px; color:var(--sub); }
+  li .s.ok { color:var(--green); } li .s.err { color:var(--red); }
+  .bar { height:3px; background:var(--line); border-radius:2px; margin-top:6px; overflow:hidden; }
+  .bar i { display:block; height:100%; width:0; background:var(--blue); transition:width .2s; }
+  .done { text-align:center; margin-top:40px; display:none; }
+  .done .tick { width:72px; height:72px; border-radius:50%; background:var(--green); color:#fff; display:flex; align-items:center; justify-content:center; margin:0 auto 18px; }
+  .done h2 { font:600 24px/1.2 -apple-system, sans-serif; margin:0 0 6px; }
+  .done p { color:var(--sub); margin:0 0 24px; }
+  .again { color:var(--blue); font-weight:500; background:none; border:0; font:inherit; cursor:pointer; }
+  footer { margin-top:auto; padding-top:40px; text-align:center; color:var(--sub); font-size:13px; }
+</style>
+</head>
+<body>
+<main>
+  <div class="mark" aria-hidden="true">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><circle cx="9" cy="10" r="1.6"/><path d="M21 16l-5-5-8 8"/></svg>
+  </div>
+  <h1>Send to Frame</h1>
+  <p class="lede">Choose photos or videos and they’ll appear on the family frame in a moment.</p>
+
+  <div id="form">
+    <label class="pick" for="files">Choose Photos</label>
+    <input id="files" type="file" accept="image/*,video/*" multiple>
+    <input class="name" id="sender" placeholder="Your name (optional)" autocomplete="name" maxlength="60">
+  </div>
+  <ul id="list"></ul>
+
+  <div class="done" id="done">
+    <div class="tick"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+    <h2 id="doneTitle">Sent</h2>
+    <p id="doneSub">Your photos are on their way to the frame.</p>
+    <button class="again" id="again">Send More</button>
+  </div>
+  <footer>Only works on the home Wi‑Fi.</footer>
+</main>
+<script>
+  var input = document.getElementById('files');
+  var list = document.getElementById('list');
+  var sender = document.getElementById('sender');
+  try { sender.value = localStorage.getItem('ff-sender') || ''; } catch (e) {}
+
+  input.addEventListener('change', function () {
+    var files = Array.prototype.slice.call(input.files || []);
+    if (!files.length) return;
+    try { localStorage.setItem('ff-sender', sender.value.trim()); } catch (e) {}
+    document.getElementById('form').style.display = 'none';
+    list.innerHTML = '';
+    var rows = files.map(function (f) {
+      var li = document.createElement('li');
+      var img = document.createElement('img');
+      if (f.type.indexOf('image/') === 0) img.src = URL.createObjectURL(f);
+      li.innerHTML = '<div class="t"><div class="n"></div><div class="s">Waiting…</div><div class="bar"><i></i></div></div>';
+      li.insertBefore(img, li.firstChild);
+      li.querySelector('.n').textContent = f.name;
+      list.appendChild(li);
+      return li;
+    });
+    var okCount = 0, pending = false;
+    // One file per request: better progress, and one bad file never sinks the batch.
+    (function next(i) {
+      if (i >= files.length) return finish();
+      var li = rows[i], s = li.querySelector('.s'), bar = li.querySelector('.bar i');
+      s.textContent = 'Uploading…';
+      var fd = new FormData(); fd.append('file', files[i], files[i].name);
+      var xhr = new XMLHttpRequest();
+      xhr.open('POST', location.pathname);
+      if (sender.value.trim()) xhr.setRequestHeader('X-Sender', sender.value.trim());
+      xhr.upload.onprogress = function (e) { if (e.lengthComputable) bar.style.width = (e.loaded / e.total * 90) + '%'; };
+      xhr.onload = function () {
+        var r = {}; try { r = JSON.parse(xhr.responseText); } catch (e) {}
+        var res = r.results && r.results[0];
+        bar.style.width = '100%';
+        if (xhr.status === 200 && res && res.ok) {
+          okCount++; pending = pending || r.pendingApproval;
+          s.className = 's ok'; s.textContent = res.processing ? 'Sent · preparing video (a minute or two)' : res.duplicate ? 'Already on the frame' : 'Sent';
+        } else {
+          s.className = 's err'; s.textContent = (res && res.error) || r.error || 'Couldn’t send';
+        }
+        next(i + 1);
+      };
+      xhr.onerror = function () { s.className = 's err'; s.textContent = 'Network error'; next(i + 1); };
+      xhr.send(fd);
+    })(0);
+
+    function finish() {
+      document.getElementById('done').style.display = 'block';
+      document.getElementById('doneTitle').textContent = okCount ? (okCount === 1 ? 'Sent' : okCount + ' Sent') : 'Nothing Sent';
+      document.getElementById('doneSub').textContent = !okCount ? 'Please try again.' : pending ? 'They’ll appear once approved on the frame.' : 'Look up — they’re on the frame.';
+    }
+  });
+  document.getElementById('again').addEventListener('click', function () {
+    document.getElementById('done').style.display = 'none';
+    document.getElementById('form').style.display = 'block';
+    list.innerHTML = ''; input.value = '';
+  });
+</script>
+</body>
+</html>

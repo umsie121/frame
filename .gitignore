@@ -1,0 +1,28 @@
+# Device backups: contain Frameo licence key, device identity, family photos. NEVER commit.
+device-snapshot/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Runtime data (photos, sqlite)
+data/
+
+node_modules/
+dist/
+*.log
+.DS_Store
+
+# Android wrapper build output / signing
+android/**/build/
+android/.gradle/
+android/local.properties
+*.keystore
+*.jks
+
+# Personal media for the HQ easter egg (house drawing): deployed to the frame, never committed
+apps/client/public/private/
+
+# build-facts.mjs progress file
+.facts-partial.json
